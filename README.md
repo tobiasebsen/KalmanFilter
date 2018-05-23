@@ -11,6 +11,7 @@ This implementation of the Kalman algorithm has a number of advantages:
 #include <kalman.h>
 
 KalmanFilter kf;
+unsigned long timer = 0;
 
 void setup() {
 
@@ -18,12 +19,11 @@ void setup() {
   kf.set(analogRead(0));
 }
 
-unsigned long timer = 0;
-
 void loop() {
 
   // Delta time : time since last prediction
   float dt = (millis()-timer)/1000.f;
+  timer = millis();
 
   // Kalman filter steps
   kf.predict(dt);
