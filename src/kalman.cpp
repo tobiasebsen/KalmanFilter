@@ -11,10 +11,7 @@
 #include "kalman.h"
 
 KalmanModel::KalmanModel() {
-    P.m00 = 1.f;
-    P.m01 = -1.f;
-    P.m10 = -1.f;
-    P.m11 = 1.f;
+    reset();
 }
 
 void KalmanModel::predict(float dt, float u, Vec2 Q) {
@@ -72,6 +69,15 @@ void KalmanModel::correct(float z, float R) {
     P = (I - Km * H) * P;
 }
 
+void KalmanModel::reset() {
+    x.x = 0;
+    x.y = 0;
+    P.m00 = 1.f;
+    P.m01 = -1.f;
+    P.m10 = -1.f;
+    P.m11 = 1.f;
+}
+
 KalmanFilter::KalmanFilter() {
     pmodels = 0;
     nmodels = 0;
@@ -84,10 +90,16 @@ KalmanFilter::KalmanFilter(unsigned int nmodels) : KalmanFilter() {
     init(nmodels);
 }
 
+KalmanFilter::~KalmanFilter() {
+    if (pmodels) {
+        delete pmodels;
+        pmodels = nullptr;
+    }
+}
+
 void KalmanFilter::predict(float dt, float * pu, unsigned int nu) {
     for (unsigned int i=0; i<nmodels; i++) {
-        KalmanModel & m = pmodels[i];
-        m.predict(dt, i < nu ? pu[i] : 0, Q);
+        pmodels[i].predict(dt, i < nu ? pu[i] : 0, Q);
     }
 }
 
@@ -95,23 +107,22 @@ void KalmanFilter::predict(float dt) {
     predict(dt, 0, 0);
 }
 
-void KalmanFilter::correct(float *pz, unsigned int nz) {
-    for (unsigned int i=0; i<nmodels; i++) {
-        KalmanModel & m = pmodels[i];
-        if (i < nz)
-            m.correct(pz[i], R);
+void KalmanFilter::correct(float *pz, unsigned int nz, unsigned int start) {
+    for (unsigned int i=0; i<nz; i++) {
+        if (i < nmodels)
+            pmodels[start+i].correct(pz[i], R);
     }
 }
 
-void KalmanFilter::correct(float z) {
-    correct(&z, 1);
+void KalmanFilter::correct(float z, unsigned int istate) {
+    if (istate < nmodels)
+        pmodels[istate].correct(z, R);
 }
 
-void KalmanFilter::get(float *px, unsigned int nx) {
-    for (unsigned int i=0; i<nmodels; i++) {
-        KalmanModel & m = pmodels[i];
-        if (i < nx)
-            px[i] = m.x[0];
+void KalmanFilter::get(float *px, unsigned int nx, unsigned int start) {
+    for (unsigned int i=0; i<nx; i++) {
+        if (i < nmodels)
+            px[i] = pmodels[start+i].x[0];
     }
 }
 
@@ -119,12 +130,22 @@ float KalmanFilter::get(unsigned int istate) {
     return pmodels[istate].x[0];
 }
 
-void KalmanFilter::set(float *px, unsigned int nx) {
-    for (unsigned int i=0; i<nmodels; i++) {
-        KalmanModel & m = pmodels[i];
-        if (i < nx)
-            m.x[0] = px[i];
+void KalmanFilter::set(float *px, unsigned int nx, unsigned int start) {
+    for (unsigned int i=0; i<nx; i++) {
+        if (i < nmodels)
+            pmodels[start+i].x[0] = px[i];
     }
+}
+
+void KalmanFilter::reset() {
+    for (unsigned int i=0; i<nmodels; i++) {
+        pmodels[i].reset();
+    }
+}
+
+void KalmanFilter::reset(unsigned int n, unsigned int start) {
+    for (unsigned int i=start; i<start+n; i++)
+        pmodels[i].reset();
 }
 
 void KalmanFilter::set(float x, unsigned int istate) {
