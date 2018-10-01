@@ -84,7 +84,7 @@ public:
     // Predict state from current error covariance (single state).
     void predict(float dt);
     // Predict multiple states from current error covariance.
-    void predict(float dt, float * pu, unsigned int nu);
+    void predict(float dt, float * pu, unsigned int nu, unsigned int start = 0);
 
     // Correct prediction with observation (single state).
     void correct(float z, unsigned int istate = 0);

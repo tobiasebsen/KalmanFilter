@@ -97,9 +97,10 @@ KalmanFilter::~KalmanFilter() {
     }
 }
 
-void KalmanFilter::predict(float dt, float * pu, unsigned int nu) {
-    for (unsigned int i=0; i<nmodels; i++) {
-        pmodels[i].predict(dt, i < nu ? pu[i] : 0, Q);
+void KalmanFilter::predict(float dt, float * pu, unsigned int nu, unsigned int start) {
+    for (unsigned int i=0; i<nu; i++) {
+		if (i < nmodels)
+        pmodels[start+i].predict(dt, pu ? pu[i] : 0, Q);
     }
 }
 
