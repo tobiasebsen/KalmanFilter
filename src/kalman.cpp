@@ -105,7 +105,7 @@ void KalmanFilter::predict(float dt, float * pu, unsigned int nu, unsigned int s
 }
 
 void KalmanFilter::predict(float dt) {
-    predict(dt, 0, 0);
+    predict(dt, 0, nmodels);
 }
 
 void KalmanFilter::correct(float *pz, unsigned int nz, unsigned int start) {
